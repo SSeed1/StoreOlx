@@ -1,0 +1,23 @@
+{
+  "name": "store",
+  "version": "1.0.0",
+  "description": "StoreOLX",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \\\"Error: no test specified\\\" && exit 1",
+    "start": "nodemon app.js"
+  },
+  "author": "Tanasiuk Vladislav",
+  "license": "ISC",
+  "dependencies": {
+    "bcrypt": "^5.0.1",
+    "cryptr": "^6.0.2",
+    "ejs": "2.7.1",
+    "express": "^4.17.1",
+    "express-fileupload": "0.4.0",
+    "express-session": "1.17.0",
+    "hapi": "17.1.0",
+    "mysql": "^2.18.1",
+    "nodemon": "^2.0.7"
+  }
+}
