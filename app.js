@@ -4,6 +4,7 @@ const app=express();
 const mysql=require('mysql');
 const Cryptr= require('cryptr');
 const session=require('express-session');
+const { compare } = require('bcrypt');
 const crypt= new Cryptr('12345678');
 app.use(session({secret:'random generated key',}));
 const con=mysql.createConnection({
@@ -21,28 +22,28 @@ con.connect(error=>{
 });
 app.use(express.static('public'));
 
-function setCurrentUser (req,res,next){
-	if (req.session.loggedIn){
-		var sql = "SELECT * FROM users WHERE uid=?"
-		var params = [req.session.userId]
-		con.query(sql,params,(err,row)=>{
-			if(row !== undefined){
-				res.locals.currentUser=row
-			}
-			return next()
-		});
-	} else {
-		return next()
-	}
-}
-function checkAuth(req,res,next){
-	if(req.session.loggedIn){
-		return next()
-	}else {
-		res.redirect("/api/login")
-	}
-}
-app.use(setCurrentUser());
+// function setCurrentUser (req,res,next){
+// 	if (req.session.loggedIn){
+// 		var sql = "SELECT * FROM users WHERE uid=?"
+// 		var params = [req.session.userId]
+// 		con.query(sql,params,(err,row)=>{
+// 			if(row !== undefined){
+// 				res.locals.currentUser=row
+// 			}
+// 			return next()
+// 		});
+// 	} else {
+// 		return next()
+// 	}
+// }
+// function checkAuth(req,res,next){
+// 	if(req.session.loggedIn){
+// 		return next()
+// 	}else {
+// 		res.redirect("/api/login")
+// 	}
+// }
+// app.use(setCurrentUser());
 app.get('/',function(req,res){
     con.query(
         'SELECT * FROM users',
@@ -77,8 +78,8 @@ app.post('/api/login',function(req,res){
                 message:"Invalid username/password"
             });
         }
-        req.session.userId = row["id"];
-		req.session.loggedIn = true;
+        // req.session.userId = row["id"];
+		// req.session.loggedIn = true;
     });
 });
 app.post('/api/register',function(req,res){
@@ -127,13 +128,61 @@ app.get('/api/items/:id',function(req,res){
 });
 app.put('/api/items/:id',function(req,res){
     let items_id=req.body.id;
-    let
+    let param =[
+        req.body.id,
+        req.body.created_at,
+        req.body.title,
+        req.body.price,
+        req.body.image,
+        req.body.user_id
+    ];
+    let sql="UPDATE items SET id=?,created_at=?,title=?,price=?,image=?,user_id=?";
     if(!items_id){
         return res.status(400).send({error:true,message:'Title should contain at least 3 characters'});
-
     }
-    con.query("UPDATE items SET ")
-})
+    con.query(sql,param,(error,result)=>{
+        if(error)throw error;
+        return res.json({error:false,data:result,message:'items list update'});
+    });
+});
+app.delete('/api/items/:id',function(req,res){
+    let items_id=req.body.id;
+    if(!items_id){
+        return res.status(400).send({error:true,message:'empty'});
+    }
+    con.query('DELETE FROM items WHERE id=?',[items_id],function(error,result,fields){
+        if(error)throw error;
+        return res.json({error:false,data:result,message:'items deleted'});
+    });
+});
+app.post('/api/items',function(req,res){
+    let param =[
+        req.body.created_at,
+        req.body.title,
+        req.body.price,
+        req.body.image,
+        req.body.user_id
+    ];
+    let sql = "INSERT INTO items(created_at,title,price,image,user_id) VALUES (?,?,?,?)";
+    con.query(sql,param,(error,result)=>{
+        if(error){
+            res.status(422)
+            res.send("error"+error.message)
+            return;
+        }
+        if(result.length>0){
+            res.json({
+                message:"Created",
+                data:result
+            });
+        }
+        else{
+            res.json({
+                message:"Wrong cureent items"
+            })
+        }
+    });
+});
 app.listen(3000,()=>{
-    console.log('node express work on 3000')
+    console.log('node express work on 3000');
 });
