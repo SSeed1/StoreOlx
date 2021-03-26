@@ -4,9 +4,12 @@ const app=express();
 const mysql=require('mysql');
 const Cryptr= require('cryptr');
 const session=require('express-session');
+const fileUpload=require('express-fileupload');
 const { compare } = require('bcrypt');
 const crypt= new Cryptr('12345678');
 app.use(session({secret:'random generated key',}));
+app.use(fileUpload());
+app.use('/photos', express.static(__dirname + '/photos/'));
 const con=mysql.createConnection({
     host:'localhost',
     user:'root',
@@ -163,7 +166,7 @@ app.post('/api/items',function(req,res){
         req.body.image,
         req.body.user_id
     ];
-    let sql = "INSERT INTO items(created_at,title,price,image,user_id) VALUES (?,?,?,?)";
+    let sql = "INSERT INTO items(created_at,title,price,image,user_id) VALUES (?,?,?,?,?)";
     con.query(sql,param,(error,result)=>{
         if(error){
             res.status(422)
@@ -181,6 +184,22 @@ app.post('/api/items',function(req,res){
                 message:"Wrong cureent items"
             })
         }
+    });
+});
+app.post('/api/items/:id/images',function(req,res){
+    let items_id=req.body.id;
+    var photoFile=req.files.photo;
+    photoFile.mv(__dirname+'/photos/'+req.files.photo.name,function(err){
+        let photo_name=req.body.photo.name;
+        var sql="INSERT INTO items(image)VALUES(?)"
+        con.query(sql,photo_name,function(err,result){
+            if(err){
+                res.status(400)
+                res.json("databse error:"+err.message)
+                return;
+            }
+            res.json({message:'image upload',data:result,error:false});
+        });
     });
 });
 app.listen(3000,()=>{
